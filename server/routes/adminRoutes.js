@@ -13,7 +13,6 @@ const {
 const { auth, authorize } = require('../middlewares/auth');
 const { validateTrafficSignal } = require('../middlewares/validation');
 
-// All admin routes require authentication and admin role
 router.use(auth);
 router.use(authorize('admin'));
 
