@@ -8,7 +8,7 @@ const connectDB = require("./config/db");
 const authRoutes = require("./routes/authRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const trafficRoutes = require("./routes/trafficRoutes");
-const { errorHandler } = require("./middlewares/errorHandler");
+const { errorHandler } = require("./middlewares/errorhandles");
 
 connectDB();
 
