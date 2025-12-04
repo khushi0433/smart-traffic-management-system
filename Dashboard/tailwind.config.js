@@ -16,6 +16,11 @@ module.exports = {
             700: '#303f9f',
             800: '#283593',
             900: '#1a237e',
+          },
+          traffic: {
+            low: '#4caf50',
+            medium: '#ff9800',
+            high: '#f44336',
           }
         }
       },
