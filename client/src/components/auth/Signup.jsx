@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { authAPI } from '../../utils/api';
 import { UserPlus, Mail, Lock, User } from 'lucide-react';
 
 function Signup() {
@@ -16,26 +17,26 @@ function Signup() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-
+  
     if (password !== confirmPassword) {
       return setError('Passwords do not match');
     }
-
+  
     setLoading(true);
-
+  
     try {
-      // Mock API call - Replace with actual API
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       if (name && email && password) {
         const mockUser = {
-          id: Date.now().toString(),
+          id: 'user_' + Date.now(),
           name: name,
           email: email,
           role: 'user'
         };
         
-        const mockToken = 'mock-jwt-token';
+        console.log('Creating user:', mockUser); // Debug
+        const mockToken = 'mock-jwt-token-' + Date.now();
         signup(mockUser, mockToken);
         navigate('/dashboard');
       } else {
@@ -116,6 +117,7 @@ function Signup() {
                   className="input-field pl-10"
                   placeholder="••••••••"
                   required
+                  minLength={6}
                 />
               </div>
             </div>
@@ -133,6 +135,7 @@ function Signup() {
                   className="input-field pl-10"
                   placeholder="••••••••"
                   required
+                  minLength={6}
                 />
               </div>
             </div>
