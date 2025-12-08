@@ -34,13 +34,10 @@ function DashboardRedirect() {
       );
       params.append("userRole", encodeURIComponent(user.role || "user"));
     } else {
-      // Fallback if user object is not ready
       params.append("token", localStorage.getItem("token") || "temp-token");
       params.append("userName", "User");
       params.append("userEmail", "user@stms.ai");
     }
-
-    // Progress and countdown logic...
     const progressInterval = setInterval(() => {
       setProgress((prev) => {
         if (prev >= 100) {
@@ -56,7 +53,7 @@ function DashboardRedirect() {
         if (prev <= 1) {
           clearInterval(countdownInterval);
           const finalUrl = `${redirectUrl}?${params.toString()}`;
-          console.log("Redirecting to:", finalUrl); // Debug log
+          console.log("Redirecting to:", finalUrl);
           window.location.href = finalUrl;
           return 0;
         }
@@ -71,7 +68,6 @@ function DashboardRedirect() {
   }, [user]);
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/20 to-emerald-50/20 pt-16">
-      {/* Animated Background Elements */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-300/10 rounded-full blur-3xl"></div>
         <div className="absolute top-1/3 -left-20 w-60 h-60 bg-emerald-300/10 rounded-full blur-3xl"></div>
@@ -81,7 +77,6 @@ function DashboardRedirect() {
       <div className="relative min-h-[calc(100vh-4rem)] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl w-full">
           <div className="bg-white/95 backdrop-blur-sm rounded-3xl p-8 sm:p-12 border border-gray-200/50 shadow-2xl shadow-blue-500/5">
-            {/* Header */}
             <div className="text-center mb-10">
               <div className="relative inline-block mb-6">
                 <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-emerald-500 blur-xl opacity-50 rounded-full"></div>
@@ -105,10 +100,7 @@ function DashboardRedirect() {
                 ! You're being redirected to the analytics dashboard.
               </p>
             </div>
-
-            {/* Main Content */}
             <div className="grid lg:grid-cols-2 gap-8 mb-10">
-              {/* Left Column - Loading Animation */}
               <div className="space-y-8">
                 <div className="bg-gradient-to-br from-blue-50 to-emerald-50 rounded-2xl p-6 border border-blue-200/50">
                   <div className="flex items-center gap-3 mb-4">
@@ -148,8 +140,6 @@ function DashboardRedirect() {
                     </div>
                   </div>
                 </div>
-
-                {/* Status Indicators */}
                 <div className="space-y-4">
                   <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
                     <div className="p-2 bg-emerald-100 rounded-lg">
@@ -182,8 +172,6 @@ function DashboardRedirect() {
                   </div>
                 </div>
               </div>
-
-              {/* Right Column - Information */}
               <div className="space-y-8">
                 <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-6 border border-gray-200">
                   <div className="flex items-center gap-3 mb-4">
@@ -231,8 +219,6 @@ function DashboardRedirect() {
                     </div>
                   </div>
                 </div>
-
-                {/* Features Preview */}
                 <div className="bg-white rounded-2xl p-6 border border-gray-200">
                   <div className="flex items-center gap-3 mb-4">
                     <div className="p-2 bg-gradient-to-br from-amber-100 to-amber-200 rounded-lg">
@@ -260,8 +246,6 @@ function DashboardRedirect() {
                 </div>
               </div>
             </div>
-
-            {/* Warning Box */}
             <div className="bg-gradient-to-r from-blue-50 to-emerald-50 rounded-2xl p-6 border border-blue-200">
               <div className="flex items-start gap-4">
                 <div className="flex-shrink-0 p-3 bg-gradient-to-br from-blue-100 to-blue-200 rounded-xl">
@@ -289,8 +273,6 @@ function DashboardRedirect() {
                 </div>
               </div>
             </div>
-
-            {/* Manual Redirect Button */}
             <div className="mt-8 text-center">
               <button
                 onClick={() => {
