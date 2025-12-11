@@ -21,7 +21,7 @@ const corsOptions = {
     'http://localhost:3000', 
     'http://localhost:3001',
     'https://smart-traffic-management-system-black-kappa.vercel.app/', // Add after deploying
-    'https://smart-traffic-management-system-bpm.vercel.app/login' // Add after deploying
+    'https://smart-traffic-management-system-bpm.vercel.app/' // Add after deploying
   ],
   credentials: true,
   optionsSuccessStatus: 200
