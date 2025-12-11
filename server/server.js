@@ -15,7 +15,7 @@ connectDB();
 const app = express();
 const server = http.createServer(app);
 
-// CORS configuration
+
 const allowedOrigins = [
   'http://localhost:3000', 
   'http://localhost:3001',
@@ -23,7 +23,7 @@ const allowedOrigins = [
   'https://smart-traffic-management-system-bpm.vercel.app'
 ];
 
-// FIXED: Use a simpler CORS configuration
+
 const corsOptions = {
   origin: allowedOrigins,
   credentials: true,
