@@ -15,12 +15,12 @@ connectDB();
 const app = express();
 const server = http.createServer(app);
 
-// CORS configuration - REMOVE TRAILING SLASHES
+// CORS configuration - FIXED: No wildcard in array
 const allowedOrigins = [
   'http://localhost:3000', 
   'http://localhost:3001',
-  'https://smart-traffic-management-system-black-kappa.vercel.app', // No trailing slash
-  'https://smart-traffic-management-system-bpm.vercel.app' // No trailing slash
+  'https://smart-traffic-management-system-black-kappa.vercel.app',
+  'https://smart-traffic-management-system-bpm.vercel.app'
 ];
 
 const corsOptions = {
@@ -43,24 +43,37 @@ const corsOptions = {
   maxAge: 86400 // 24 hours
 };
 
-// Socket.io configuration with same origins
+// Socket.io configuration with same origins - FIXED: No wildcard
 const io = new Server(server, {
   cors: {
-    origin: allowedOrigins,
+    origin: allowedOrigins, // Use the array directly, no wildcard
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
     allowedHeaders: ["Content-Type", "Authorization"],
   },
-  transports: ['websocket', 'polling'], // Enable both transports
-  pingTimeout: 60000, // 60 seconds
-  pingInterval: 25000, // 25 seconds
+  transports: ['websocket', 'polling'],
+  pingTimeout: 60000,
+  pingInterval: 25000,
 });
 
 // Apply CORS middleware
 app.use(cors(corsOptions));
 
-// Handle preflight requests
-app.options('*', cors(corsOptions));
+// Handle preflight requests - FIXED: Use specific origins instead of '*'
+app.options('*', (req, res) => {
+  const origin = req.headers.origin;
+  
+  if (allowedOrigins.includes(origin)) {
+    res.header('Access-Control-Allow-Origin', origin);
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Max-Age', '86400');
+    res.sendStatus(200);
+  } else {
+    res.sendStatus(403);
+  }
+});
 
 // Increase JSON payload limit
 app.use(express.json({ limit: '10mb' }));
@@ -76,7 +89,7 @@ app.get("/api/health", (req, res) => {
   });
 });
 
-// Add a test endpoint for dashboard token
+// Dashboard token endpoint
 app.post("/api/auth/dashboard-token", async (req, res) => {
   try {
     const { dashboardUrl } = req.body;
@@ -90,12 +103,9 @@ app.post("/api/auth/dashboard-token", async (req, res) => {
     }
     
     const token = authHeader.split(' ')[1];
-    
-    // In a real implementation, verify the token here
-    // For now, we'll just generate a new dashboard token
     const jwt = require('jsonwebtoken');
     
-    // Decode the token to get user info (without verification for demo)
+    // Decode the token
     const decoded = jwt.decode(token);
     
     if (!decoded) {
@@ -105,7 +115,7 @@ app.post("/api/auth/dashboard-token", async (req, res) => {
       });
     }
     
-    // Generate a short-lived dashboard token
+    // Generate dashboard token
     const dashboardToken = jwt.sign(
       {
         userId: decoded.userId || decoded.id || "1",
@@ -115,7 +125,7 @@ app.post("/api/auth/dashboard-token", async (req, res) => {
         dashboardUrl: dashboardUrl,
         source: "dashboard-redirect",
         iat: Math.floor(Date.now() / 1000),
-        exp: Math.floor(Date.now() / 1000) + (15 * 60) // 15 minutes
+        exp: Math.floor(Date.now() / 1000) + (15 * 60)
       },
       process.env.JWT_SECRET || "your-secret-key-change-in-production",
       { expiresIn: '15m' }
@@ -143,12 +153,11 @@ app.post("/api/auth/dashboard-token", async (req, res) => {
   }
 });
 
-// Dashboard callback endpoint (for POST redirects)
+// Dashboard callback endpoint
 app.post("/api/auth/dashboard-callback", (req, res) => {
   try {
     const { token, userId, userName, userEmail, userRole, redirect } = req.body;
     
-    // Validate required fields
     if (!token) {
       return res.status(400).json({ 
         success: false, 
@@ -156,11 +165,9 @@ app.post("/api/auth/dashboard-callback", (req, res) => {
       });
     }
     
-    // In production, verify the token here
     const dashboardUrl = "https://smart-traffic-management-system-bpm.vercel.app";
     const redirectUrl = redirect || `${dashboardUrl}/dashboard`;
     
-    // Create an HTML page that will auto-redirect and store the token
     const htmlResponse = `
       <!DOCTYPE html>
       <html>
@@ -205,7 +212,7 @@ app.post("/api/auth/dashboard-callback", (req, res) => {
   }
 });
 
-// Simple token validation endpoint
+// Token validation endpoint
 app.get("/api/auth/validate", (req, res) => {
   const authHeader = req.headers.authorization;
   
@@ -260,7 +267,7 @@ app.use(errorHandler);
 // Socket.io for real-time updates
 require("./sockets/trafficSockets")(io);
 
-// Add connection logging for debugging
+// Socket connection logging
 io.on("connection", (socket) => {
   console.log(`New client connected: ${socket.id}`);
   console.log(`Origin: ${socket.handshake.headers.origin}`);
