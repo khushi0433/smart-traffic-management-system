@@ -9,7 +9,7 @@ const authRoutes = require("./routes/authRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const trafficRoutes = require("./routes/trafficRoutes");
 const { errorHandler } = require("./middlewares/errorhandles");
-
+const subscriptionRoutes = require('./routes/subscriptionRoutes');
 connectDB();
 
 const app = express();
@@ -115,7 +115,7 @@ const io = new Server(server, {
 app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/traffic", trafficRoutes);
-
+app.use('/api/subscriptions', subscriptionRoutes);
 // 404 handler
 app.use((req, res) => {
   res.status(404).json({ 

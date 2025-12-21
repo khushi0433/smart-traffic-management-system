@@ -24,6 +24,16 @@ const userSchema = new mongoose.Schema({
     enum: ['admin', 'operator'],
     default: 'operator'
   },
+  // ADD THESE FIELDS:
+  subscriptionId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Subscription'
+  },
+  subscriptionStatus: {
+    type: String,
+    enum: ['none', 'trial', 'active', 'cancelled', 'expired', 'past_due'],
+    default: 'none'
+  },
   createdAt: {
     type: Date,
     default: Date.now
