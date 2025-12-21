@@ -19,25 +19,39 @@ function Login() {
     setLoading(true);
 
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      if (email && password) {
-        const mockUser = {
-          id: 'user_' + Date.now(),
-          name: email.split('@')[0],
-          email: email,
-          role: 'user',
-          avatar: `https://ui-avatars.com/api/?name=${email.split('@')[0]}&background=3b82f6&color=fff`
-        };
-        
-        const mockToken = 'mock-jwt-token-' + Date.now();
-        login(mockUser, mockToken);
-        navigate('/dashboard');
-      } else {
-        setError('Please enter both email and password');
+      const API_BASE_URL = process.env.NODE_ENV === 'production' 
+        ? 'https://smart-traffic-management-system-23fs.onrender.com' 
+        : 'http://localhost:5500';
+
+      console.log('Attempting login to:', `${API_BASE_URL}/api/auth/login`);
+
+      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password })
+      });
+
+      const data = await response.json();
+      console.log('Login response:', { status: response.status, hasToken: !!data.token });
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Login failed');
       }
+
+      if (!data.token) {
+        throw new Error('No token received from server');
+      }
+
+      // Login with real token and user data from backend
+      await login(data.user, data.token);
+      
+      console.log('Login successful, navigating to dashboard');
+      navigate('/dashboard');
     } catch (err) {
-      setError('Failed to login. Please check your credentials and try again.');
+      console.error('Login error:', err);
+      setError(err.message || 'Failed to login. Please check your credentials and try again.');
     } finally {
       setLoading(false);
     }
@@ -186,18 +200,11 @@ function Login() {
 
                 <div className="flex items-center justify-between">
                   <label className="flex items-center cursor-pointer group">
-                    <div className="relative">
-                      <input
-                        type="checkbox"
-                        className="sr-only"
-                        defaultChecked
-                      />
-                      <div className="w-5 h-5 bg-gray-200 rounded flex items-center justify-center group-hover:bg-gray-300 transition-colors">
-                        <svg className="w-3 h-3 text-white opacity-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
-                        </svg>
-                      </div>
-                    </div>
+                    <input
+                      type="checkbox"
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      defaultChecked
+                    />
                     <span className="ml-2 text-sm text-gray-700">Remember me</span>
                   </label>
                   <a

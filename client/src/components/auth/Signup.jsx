@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { UserPlus, Mail, Lock, User, Eye, EyeOff, AlertCircle, Shield, Check, Sparkles } from 'lucide-react';
+import { UserPlus, Mail, Lock, User, Eye, EyeOff, AlertCircle, Check } from 'lucide-react';
 
 function Signup() {
   const [name, setName] = useState('');
@@ -31,25 +31,12 @@ function Signup() {
     setLoading(true);
   
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      if (name && email && password) {
-        const mockUser = {
-          id: 'user_' + Date.now(),
-          name: name,
-          email: email,
-          role: 'user',
-          avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=3b82f6&color=fff`
-        };
-        
-        const mockToken = 'mock-jwt-token-' + Date.now();
-        signup(mockUser, mockToken);
-        navigate('/dashboard');
-      } else {
-        setError('Please fill all fields');
-      }
+      // Pass the password to signup so it can be sent to the backend
+      await signup({ name, email, password }, null);
+      navigate('/dashboard');
     } catch (err) {
-      setError('Failed to create account. Please try again.');
+      console.error('Signup error:', err);
+      setError(err.message || 'Failed to create account. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -76,70 +63,16 @@ function Signup() {
 
       <div className="relative min-h-[calc(100vh-4rem)] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-6xl w-full grid lg:grid-cols-2 gap-12 items-center">
-          {/* Left Column - Benefits */}
+          {/* Left Column - Benefits (hidden on mobile) */}
           <div className="hidden lg:block space-y-8">
+            {/* ... same as before ... */}
             <div>
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-100 to-emerald-100 rounded-full mb-6">
-                <Sparkles className="h-4 w-4 text-blue-600" />
-                <span className="text-sm font-semibold text-gray-700">Join Smart Cities Platform</span>
-              </div>
-              
               <h1 className="text-5xl font-bold text-gray-900 mb-6">
                 Transform Urban Mobility
                 <span className="block bg-gradient-to-r from-blue-600 to-emerald-500 bg-clip-text text-transparent mt-2">
                   With Your Expertise
                 </span>
               </h1>
-              
-              <p className="text-xl text-gray-600 mb-8 leading-relaxed">
-                Create your account to access advanced traffic management tools, real-time analytics, 
-                and AI-powered optimization for smarter city infrastructure.
-              </p>
-            </div>
-
-            {/* Benefits Grid */}
-            <div className="space-y-6">
-              <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 border border-gray-200/50">
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg flex items-center justify-center">
-                    <svg className="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                    </svg>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900 mb-2">Enterprise Security</h3>
-                    <p className="text-gray-600">Military-grade encryption and compliance with global data protection standards.</p>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 border border-gray-200/50">
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-lg flex items-center justify-center">
-                    <svg className="h-6 w-6 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                    </svg>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900 mb-2">Real-time Insights</h3>
-                    <p className="text-gray-600">Live data visualization and predictive analytics for proactive traffic management.</p>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 border border-gray-200/50">
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 bg-gradient-to-br from-violet-50 to-violet-100 rounded-lg flex items-center justify-center">
-                    <svg className="h-6 w-6 text-violet-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                    </svg>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900 mb-2">Collaborative Platform</h3>
-                    <p className="text-gray-600">Work seamlessly with your team and share insights across departments.</p>
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
 
@@ -388,15 +321,6 @@ function Signup() {
                   </svg>
                 </Link>
               </div>
-            </div>
-
-            <div className="mt-8 text-center">
-              <p className="text-sm text-gray-500">
-                By creating an account, you confirm you have read and accept our{' '}
-                <a href="#" className="text-blue-600 hover:text-blue-500">Terms of Service</a>{' '}
-                and{' '}
-                <a href="#" className="text-blue-600 hover:text-blue-500">Privacy Policy</a>
-              </p>
             </div>
           </div>
         </div>

@@ -101,53 +101,76 @@ function Checkout() {
     setPaymentError('');
   
     try {
-      // IMPORTANT: Use the exact URL that matches your backend
+      // Get fresh token from localStorage
+      const token = localStorage.getItem('token');
+      
+      if (!token) {
+        throw new Error('Authentication token not found. Please log in again.');
+      }
+
+      console.log('Using token:', token.substring(0, 20) + '...');
+
       const API_BASE_URL = process.env.NODE_ENV === 'production' 
-        ? 'https://your-api.com' 
+        ? 'https://smart-traffic-management-system-23fs.onrender.com' 
         : 'http://localhost:5500';
-  
+
+      const requestBody = {
+        orderId: data.orderID,
+        planId: planDetails.plan,
+        planName: planDetails.planName,
+        billingCycle: planDetails.billingCycle,
+        amount: calculateTotal(),
+        paypalOrderId: data.orderID,
+        ...(appliedCoupon && { couponCode: couponCode })
+      };
+
+      console.log('Sending request to:', `${API_BASE_URL}/api/subscriptions/create`);
+      console.log('Request body:', requestBody);
+
       const response = await fetch(`${API_BASE_URL}/api/subscriptions/create`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({
-          // Send ALL required fields your backend expects
-          orderId: data.orderID, // PayPal order ID
-          planId: planDetails.plan,
-          planName: planDetails.planName,
-          billingCycle: planDetails.billingCycle,
-          amount: calculateTotal(),
-          paypalOrderId: data.orderID, // Make sure this matches backend expectation
-          // Add coupon if applied
-          ...(appliedCoupon && { couponCode: couponCode })
-        })
+        body: JSON.stringify(requestBody)
       });
-  
-      // DEBUG: Log what we're actually receiving
-      const responseText = await response.text();
+
       console.log('Response status:', response.status);
       console.log('Response headers:', response.headers);
+
+      const responseText = await response.text();
       console.log('Response body (first 500 chars):', responseText.substring(0, 500));
-  
-      // Check if it's HTML error page
+
+      // Check if response is HTML (error page)
       if (responseText.trim().startsWith('<!DOCTYPE') || 
           responseText.trim().startsWith('<html>')) {
-        throw new Error(`Server returned HTML instead of JSON. Status: ${response.status}`);
+        throw new Error(`Server returned HTML instead of JSON. Status: ${response.status}. This usually means the backend route doesn't exist or there's a server error.`);
       }
-  
+
       // Try to parse as JSON
-      const result = JSON.parse(responseText);
-  
-      if (!response.ok) {
-        throw new Error(result.message || `HTTP ${response.status}`);
+      let result;
+      try {
+        result = JSON.parse(responseText);
+      } catch (parseError) {
+        throw new Error(`Failed to parse server response: ${parseError.message}. Response: ${responseText.substring(0, 200)}`);
       }
-  
+
+      // Check for HTTP errors
+      if (!response.ok) {
+        if (response.status === 401) {
+          // Token is invalid or expired
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          throw new Error('Your session has expired. Please log in again.');
+        }
+        throw new Error(result.message || `Server error: HTTP ${response.status}`);
+      }
+
       // Success!
       console.log('Subscription created:', result);
       setPaymentSuccess(true);
-  
+
       setTimeout(() => {
         navigate('/dashboard', { 
           state: { 
@@ -156,24 +179,33 @@ function Checkout() {
           } 
         });
       }, 3000);
-  
+
     } catch (error) {
       console.error('Payment processing error:', error);
       
-      // Better error messages
-      if (error.message.includes('HTML instead of JSON')) {
-        setPaymentError(`Server error (${error.message}). Check backend route and auth.`);
+      let errorMessage = 'Payment processing failed. ';
+      
+      if (error.message.includes('session has expired')) {
+        errorMessage = 'Your session has expired. Redirecting to login...';
+        setTimeout(() => navigate('/login'), 2000);
+      } else if (error.message.includes('HTML instead of JSON')) {
+        errorMessage = 'Server configuration error. Please contact support. (Backend route not found)';
       } else if (error.message.includes('401')) {
-        setPaymentError('Session expired. Please log in again.');
+        errorMessage = 'Authentication failed. Please log in again.';
+        setTimeout(() => navigate('/login'), 2000);
+      } else if (error.message.includes('Failed to fetch')) {
+        errorMessage = 'Cannot connect to server. Please check your internet connection.';
       } else {
-        setPaymentError(error.message || 'Payment processing failed.');
+        errorMessage += error.message;
       }
+      
+      setPaymentError(errorMessage);
     } finally {
       setProcessing(false);
     }
   };
+
   const onCancel = (data) => {
-    // User closed PayPal popup without completing payment
     console.log('Payment cancelled by user:', data);
     setPaymentError('Payment was cancelled. Please try again when you\'re ready.');
     setProcessing(false);
@@ -182,7 +214,6 @@ function Checkout() {
   const onError = (err) => {
     console.error('PayPal error:', err);
     
-    // Determine error type
     let errorMessage = 'Payment failed. Please try again.';
     
     if (err.message && err.message.includes('Window closed')) {
@@ -406,7 +437,6 @@ function Checkout() {
                     Payment Method
                   </h3>
                   
-                  {/* Important Instructions */}
                   <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-xl">
                     <p className="text-sm text-blue-800 font-medium mb-2">
                       ℹ️ Payment Instructions:

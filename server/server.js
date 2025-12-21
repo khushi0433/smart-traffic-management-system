@@ -41,10 +41,24 @@ const corsOptions = {
   maxAge: 86400 // 24 hours
 };
 
+// Apply CORS globally
 app.use(cors(corsOptions));
 
-// Preflight handling
-app.options('*', cors(corsOptions));
+// REMOVED THE PROBLEMATIC LINE:
+// app.options('*', cors(corsOptions));
+
+// Handle preflight requests manually for all routes
+app.use((req, res, next) => {
+  if (req.method === 'OPTIONS') {
+    res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Max-Age', '86400');
+    return res.sendStatus(204);
+  }
+  next();
+});
 
 // Increase JSON payload limit
 app.use(express.json({ limit: '10mb' }));
@@ -116,6 +130,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/traffic", trafficRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
+
 // 404 handler
 app.use((req, res) => {
   res.status(404).json({ 
@@ -142,7 +157,7 @@ io.on("connection", (socket) => {
   });
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5500;
 server.listen(PORT, () => {
   console.log(`\n========================================`);
   console.log(`✓ Backend server running on port ${PORT}`);
