@@ -4,6 +4,8 @@ import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
+import Pricing from './pages/Pricing';
+import Checkout from './pages/Checkout';
 
 import Home from './pages/Home';
 import About from './pages/About';
@@ -25,9 +27,18 @@ function App() {
               <Route path="/" element={<Home />} />
               <Route path="/about" element={<About />} />
               <Route path="/contact" element={<Contact />} />
+              <Route path="/pricing" element={<Pricing />} />  {/* NEW */}
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
               <Route path="/logout" element={<Logout />} />
+              <Route 
+                path="/checkout" 
+                element={
+                  <ProtectedRoute>
+                    <Checkout />
+                  </ProtectedRoute>
+                } 
+              />  {/* NEW */}
               <Route 
                 path="/dashboard" 
                 element={
@@ -40,7 +51,7 @@ function App() {
             </Routes>
           </main>
           <Footer />
-          <ChatBot />
+          <ChatBot />  {/* NEW - Available on all pages */}
         </div>
       </Router>
     </AuthProvider>

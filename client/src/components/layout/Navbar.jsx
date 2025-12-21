@@ -20,6 +20,7 @@ function Navbar() {
   const navItems = [
     { path: '/', label: 'Home' },
     { path: '/about', label: 'About' },
+    { path: '/pricing', label: 'Pricing' },  // ADD THIS
     { path: '/contact', label: 'Contact' },
   ];
 

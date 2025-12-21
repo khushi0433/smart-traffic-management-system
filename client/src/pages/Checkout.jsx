@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { 
   ShieldCheck, CreditCard, Lock, CheckCircle, 
-  AlertCircle, ArrowLeft, Calendar, Tag 
+  AlertCircle, ArrowLeft, Calendar, Tag, XCircle 
 } from 'lucide-react';
 import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
 
@@ -32,7 +32,7 @@ function Checkout() {
     }
   }, [user, navigate]);
 
-  // Coupon codes (in production, these would be validated server-side)
+  // Coupon codes
   const coupons = {
     'LAUNCH50': { discount: 50, type: 'percentage', description: '50% off first month' },
     'SAVE20': { discount: 20, type: 'percentage', description: '20% off' },
@@ -72,12 +72,13 @@ function Checkout() {
 
   // PayPal configuration
   const initialOptions = {
-    "client-id": "YOUR_PAYPAL_CLIENT_ID", // Replace with your PayPal Client ID
+    "client-id": process.env.REACT_APP_PAYPAL_CLIENT_ID || "YOUR_PAYPAL_CLIENT_ID",
     currency: "USD",
     intent: "capture",
   };
 
   const createOrder = (data, actions) => {
+    console.log('Creating PayPal order...');
     return actions.order.create({
       purchase_units: [
         {
@@ -95,24 +96,58 @@ function Checkout() {
   };
 
   const onApprove = async (data, actions) => {
+    console.log('Payment approved, capturing order...');
     setProcessing(true);
+    setPaymentError('');
+  
     try {
-      const details = await actions.order.capture();
-      
-      // Here you would typically:
-      // 1. Send payment details to your backend
-      // 2. Create subscription in your database
-      // 3. Update user's subscription status
-      
-      console.log('Payment successful:', details);
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
+      // IMPORTANT: Use the exact URL that matches your backend
+      const API_BASE_URL = process.env.NODE_ENV === 'production' 
+        ? 'https://your-api.com' 
+        : 'http://localhost:5500';
+  
+      const response = await fetch(`${API_BASE_URL}/api/subscriptions/create`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          // Send ALL required fields your backend expects
+          orderId: data.orderID, // PayPal order ID
+          planId: planDetails.plan,
+          planName: planDetails.planName,
+          billingCycle: planDetails.billingCycle,
+          amount: calculateTotal(),
+          paypalOrderId: data.orderID, // Make sure this matches backend expectation
+          // Add coupon if applied
+          ...(appliedCoupon && { couponCode: couponCode })
+        })
+      });
+  
+      // DEBUG: Log what we're actually receiving
+      const responseText = await response.text();
+      console.log('Response status:', response.status);
+      console.log('Response headers:', response.headers);
+      console.log('Response body (first 500 chars):', responseText.substring(0, 500));
+  
+      // Check if it's HTML error page
+      if (responseText.trim().startsWith('<!DOCTYPE') || 
+          responseText.trim().startsWith('<html>')) {
+        throw new Error(`Server returned HTML instead of JSON. Status: ${response.status}`);
+      }
+  
+      // Try to parse as JSON
+      const result = JSON.parse(responseText);
+  
+      if (!response.ok) {
+        throw new Error(result.message || `HTTP ${response.status}`);
+      }
+  
+      // Success!
+      console.log('Subscription created:', result);
       setPaymentSuccess(true);
-      setPaymentError('');
-      
-      // Redirect to dashboard after 3 seconds
+  
       setTimeout(() => {
         navigate('/dashboard', { 
           state: { 
@@ -121,17 +156,45 @@ function Checkout() {
           } 
         });
       }, 3000);
-      
+  
     } catch (error) {
-      console.error('Payment error:', error);
-      setPaymentError('Payment processing failed. Please try again.');
+      console.error('Payment processing error:', error);
+      
+      // Better error messages
+      if (error.message.includes('HTML instead of JSON')) {
+        setPaymentError(`Server error (${error.message}). Check backend route and auth.`);
+      } else if (error.message.includes('401')) {
+        setPaymentError('Session expired. Please log in again.');
+      } else {
+        setPaymentError(error.message || 'Payment processing failed.');
+      }
+    } finally {
       setProcessing(false);
     }
+  };
+  const onCancel = (data) => {
+    // User closed PayPal popup without completing payment
+    console.log('Payment cancelled by user:', data);
+    setPaymentError('Payment was cancelled. Please try again when you\'re ready.');
+    setProcessing(false);
   };
 
   const onError = (err) => {
     console.error('PayPal error:', err);
-    setPaymentError('Payment failed. Please try again or contact support.');
+    
+    // Determine error type
+    let errorMessage = 'Payment failed. Please try again.';
+    
+    if (err.message && err.message.includes('Window closed')) {
+      errorMessage = 'Payment window was closed. Click the PayPal button to try again.';
+    } else if (err.message && err.message.includes('timeout')) {
+      errorMessage = 'Payment timed out. Please check your connection and try again.';
+    } else if (err.message) {
+      errorMessage = `Payment error: ${err.message}`;
+    }
+    
+    setPaymentError(errorMessage);
+    setProcessing(false);
   };
 
   if (paymentSuccess) {
@@ -166,9 +229,10 @@ function Checkout() {
               </div>
             </div>
             
-            <p className="text-sm text-gray-500">
-              Redirecting to dashboard...
-            </p>
+            <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
+              <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-500 border-t-transparent"></div>
+              <span>Redirecting to dashboard...</span>
+            </div>
           </div>
         </div>
       </div>
@@ -263,9 +327,18 @@ function Checkout() {
                 {/* Error Message */}
                 {paymentError && (
                   <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
-                    <div className="flex items-center gap-3">
-                      <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0" />
-                      <p className="text-sm text-red-800">{paymentError}</p>
+                    <div className="flex items-start gap-3">
+                      <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-red-800 mb-1">Payment Error</p>
+                        <p className="text-sm text-red-700">{paymentError}</p>
+                      </div>
+                      <button 
+                        onClick={() => setPaymentError('')}
+                        className="text-red-400 hover:text-red-600"
+                      >
+                        <XCircle className="h-5 w-5" />
+                      </button>
                     </div>
                   </div>
                 )}
@@ -333,17 +406,32 @@ function Checkout() {
                     Payment Method
                   </h3>
                   
+                  {/* Important Instructions */}
+                  <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                    <p className="text-sm text-blue-800 font-medium mb-2">
+                      ℹ️ Payment Instructions:
+                    </p>
+                    <ul className="text-sm text-blue-700 space-y-1 ml-4">
+                      <li>• Click the PayPal button below</li>
+                      <li>• Complete payment in the PayPal window</li>
+                      <li>• <strong>Do not close</strong> the window until payment is complete</li>
+                      <li>• You'll be redirected back automatically</li>
+                    </ul>
+                  </div>
+                  
                   <div className="border-2 border-gray-200 rounded-xl p-6">
                     {processing ? (
                       <div className="text-center py-8">
                         <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent mx-auto mb-4"></div>
-                        <p className="text-gray-600">Processing your payment...</p>
+                        <p className="text-gray-600 font-medium">Processing your payment...</p>
+                        <p className="text-sm text-gray-500 mt-2">Please wait, do not refresh the page</p>
                       </div>
                     ) : (
                       <PayPalScriptProvider options={initialOptions}>
                         <PayPalButtons
                           createOrder={createOrder}
                           onApprove={onApprove}
+                          onCancel={onCancel}
                           onError={onError}
                           style={{
                             layout: "vertical",
@@ -351,6 +439,7 @@ function Checkout() {
                             shape: "rect",
                             label: "paypal"
                           }}
+                          disabled={processing}
                         />
                       </PayPalScriptProvider>
                     )}
