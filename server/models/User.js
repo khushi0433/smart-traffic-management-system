@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-// Define the User schema
+
 const userSchema = new mongoose.Schema({
   name: {
     type: String,
@@ -24,23 +24,27 @@ const userSchema = new mongoose.Schema({
     enum: ['admin', 'operator'],
     default: 'operator'
   },
-  // ADD THESE FIELDS:
+
   subscriptionId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Subscription'
+    ref: 'Subscription',
+    default: null 
   },
   subscriptionStatus: {
     type: String,
     enum: ['none', 'trial', 'active', 'cancelled', 'expired', 'past_due'],
-    default: 'none'
+    default: 'none' 
   },
   createdAt: {
     type: Date,
     default: Date.now
   }
+}, {
+  strict: true,  
+  versionKey: false, 
+  minimize: false  
 });
 
-// Note: Password hashing is handled in authController.js using bcryptjs
-// This keeps the model clean and puts business logic in the controller
+
 
 module.exports = mongoose.model('User', userSchema);
